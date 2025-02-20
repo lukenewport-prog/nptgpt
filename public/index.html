@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NptGPT</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>NptGPT</h1>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="welcome-message">
+                <p>👋 Hello! How can I help you today?</p>
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <form id="chat-form">
+                <div class="input-container">
+                    <button type="button" id="new-chat-button" class="action-button" title="New Chat">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                    <div class="image-upload-container" id="image-upload-container">
+                        <input 
+                            type="file" 
+                            id="image-input" 
+                            accept="image/png, image/jpeg, image/gif" 
+                            style="display: none;"
+                        >
+                        <button type="button" id="upload-button" class="action-button">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <textarea 
+                        id="user-input" 
+                        placeholder="Type your message here..." 
+                        rows="1"
+                        autofocus
+                    ></textarea>
+                    <button type="submit" id="send-button">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </form>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
