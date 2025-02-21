@@ -25,9 +25,41 @@ body {
     border-bottom: 1px solid #4a4b53;
 }
 
+.chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #4a4b53;
+}
+
 .chat-header h1 {
     font-size: 1.5rem;
     font-weight: 600;
+    margin: 0;
+}
+
+.logout-button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #565869;
+    color: #fff;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.logout-button:hover {
+    background-color: #676980;
+}
+
+.logout-button svg {
+    width: 16px;
+    height: 16px;
 }
 
 .chat-messages {

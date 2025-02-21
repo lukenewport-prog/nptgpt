@@ -11,6 +11,10 @@ services:
       - AZURE_OPENAI_KEY=${AZURE_OPENAI_KEY}
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
       - AZURE_OPENAI_DEPLOYMENT_NAME=${AZURE_OPENAI_DEPLOYMENT_NAME}
+      - JWT_SECRET=${JWT_SECRET}
+      - AUTH_USERNAME=${AUTH_USERNAME}
+      - AUTH_PASSWORD=${AUTH_PASSWORD}
+      - NODE_ENV=production
     volumes:
       - ./public/uploads:/usr/src/app/public/uploads
     restart: unless-stopped

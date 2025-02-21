@@ -1,4 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Check authentication
+    const token = localStorage.getItem('token');
+    if (!token) {
+        window.location.href = '/login.html';
+        return;
+    }
+
     const chatForm = document.getElementById('chat-form');
     const userInput = document.getElementById('user-input');
     const chatMessages = document.getElementById('chat-messages');
@@ -7,6 +14,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const newChatButton = document.getElementById('new-chat-button');
     let isProcessing = false;
     let currentImageUrl = null;
+    let currentConversationId = null;
+
+    // Add logout button
+    const header = document.querySelector('.chat-header');
+    const logoutButton = document.createElement('button');
+    logoutButton.className = 'logout-button';
+    logoutButton.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        Logout
+    `;
+    header.appendChild(logoutButton);
+
+    // Handle logout
+    logoutButton.addEventListener('click', async () => {
+        try {
+            await fetch('/api/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        } catch (error) {
+            console.error('Logout failed:', error);
+        }
+    });
 
     // Handle image upload button click
     uploadButton.addEventListener('click', () => {
@@ -26,6 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('image', file);
 
             const response = await fetch('/api/upload', {
+                credentials: 'include',
                 method: 'POST',
                 body: formData
             });
@@ -112,10 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
                 },
+                credentials: 'include',
                 body: JSON.stringify({ 
                     message,
-                    imageUrl: currentImageUrl
+                    imageUrl: currentImageUrl,
+                    conversationId: currentConversationId
                 }),
             });
 
@@ -129,6 +169,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             loadingDiv.remove();
             addMessage(data.reply, 'assistant');
+            
+            // Store conversation ID
+            if (data.conversationId) {
+                currentConversationId = data.conversationId;
+            }
 
             // Clear image after successful submission
             removeImagePreview();
@@ -184,6 +229,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Handle new chat button click
     newChatButton.addEventListener('click', () => {
+        // Reset conversation ID
+        currentConversationId = null;
+        
         // Clear chat messages except welcome message
         while (chatMessages.lastChild) {
             chatMessages.removeChild(chatMessages.lastChild);

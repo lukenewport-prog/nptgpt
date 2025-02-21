@@ -1,4 +1,4 @@
- import express from 'express';
+import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
@@ -7,6 +7,8 @@ import { dirname } from 'path';
 import fs from 'fs';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
+import cookieParser from 'cookie-parser';
+import { authenticate, generateToken, authMiddleware } from './auth.js';
 
 dotenv.config();
 
@@ -21,7 +23,7 @@ const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'public/uploads/');
   },
-  filename: function (req, file, cb) {
+  filename: function (req, file, cb) { 
     cb(null, Date.now() + path.extname(file.originalname));
   }
 });
@@ -43,10 +45,44 @@ const upload = multer({
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.static('public'));
 app.use('/uploads', express.static('public/uploads'));
+
+// Authentication middleware
+app.use(authMiddleware);
+
+// Login endpoint
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+
+  if (!authenticate(username, password)) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  const token = generateToken(username);
+  
+  // Set cookie
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  });
+
+  res.json({ token });
+});
+
+// Logout endpoint
+app.post('/api/logout', (req, res) => {
+  res.clearCookie('token');
+  res.json({ message: 'Logged out successfully' });
+});
 
 // Create uploads directory if it doesn't exist
 const uploadDir = path.join(__dirname, 'public/uploads');
@@ -109,13 +145,20 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
   });
 });
 
+// Store conversations in memory (in a production environment, use a database)
+const conversations = new Map();
+
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, imageUrl } = req.body;
-    let messages = [
+    const { message, imageUrl, conversationId } = req.body;
+    
+    // Get or create conversation history
+    let messages = conversations.get(conversationId) || [
       { role: "system", content: "You are a helpful AI assistant capable of understanding both text and images." }
     ];
 
+    // Create new message
+    let newMessage;
     if (imageUrl) {
       // Read the image file and convert to base64
       const imagePath = path.join(__dirname, 'public', imageUrl);
@@ -126,7 +169,7 @@ app.post('/api/chat', async (req, res) => {
                       'image/jpeg';
 
       // For GPT-4O Vision API
-      messages.push({
+      newMessage = {
         role: "user",
         content: [
           { type: "text", text: message || "What's in this image?" },
@@ -138,13 +181,16 @@ app.post('/api/chat', async (req, res) => {
             }
           }
         ]
-      });
+      };
     } else {
-      messages.push({
+      newMessage = {
         role: "user",
         content: message
-      });
+      };
     }
+
+    // Add new message to history
+    messages.push(newMessage);
     
     const response = await client.chat.completions.create({
       messages: messages,
@@ -152,8 +198,28 @@ app.post('/api/chat', async (req, res) => {
       max_tokens: 800
     });
 
-    const reply = response.choices[0].message.content;
-    res.json({ reply });
+    // Add assistant's response to history
+    const assistantMessage = {
+      role: "assistant",
+      content: response.choices[0].message.content
+    };
+    messages.push(assistantMessage);
+
+    // Store updated conversation
+    if (!conversationId) {
+      const newConversationId = Date.now().toString();
+      conversations.set(newConversationId, messages);
+      res.json({ 
+        reply: assistantMessage.content,
+        conversationId: newConversationId
+      });
+    } else {
+      conversations.set(conversationId, messages);
+      res.json({ 
+        reply: assistantMessage.content,
+        conversationId
+      });
+    }
   } catch (error) {
     console.error('Error:', error);
     if (error.error?.code === 'content_filter') {
